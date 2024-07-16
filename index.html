@@ -1,0 +1,519 @@
+<html>
+<head title="Race for Life !">
+<script type="text/javascript">
+var timerstopped = 0;
+
+var bool_moveLeft;
+var bool_moveRight;
+
+var position = 5;
+
+
+
+var currentCurve = 0;
+var curveStep = 0;
+
+var speed = 0;
+var enemySpeedy = 0;
+
+const roadWidth = 300;
+const horizont = 200;
+const canvasWidth = 640;
+const canvasHeight = 480;
+const carSize = 50;
+const ground = canvasHeight;
+const carWidth = 50;
+
+var roady = horizont;
+
+var direction = 1;
+var startx=100;
+var starty = ground;
+
+var incrash = 0;
+
+var endx = startx;
+var endy = horizont;
+var controlx=(startx+endx)/2;
+var controly = (starty+endy)/2;
+
+var carx = startx+50;
+var cary = canvasHeight-carSize-25; //??
+
+var enemyCarx = startx;
+var enemyCary = horizont+50;
+
+var curve = 0;
+
+   var soundObject = null;
+        function playSound(soundfile) {
+            if (soundObject != null) {
+                document.body.removeChild(soundObject);
+                soundObject.removed = true;
+                soundObject = null;
+            }
+            soundObject = document.createElement("embed");
+            soundObject.setAttribute("src", "sounds/"+soundfile);
+            soundObject.setAttribute("hidden", true);
+            soundObject.setAttribute("autostart", true);
+			soundObject.setAttribute("loop", true);
+            document.body.appendChild(soundObject);
+        }
+
+
+var funcSetInterval;
+var map = {};
+
+   
+var myGameArea = {
+   // canvas : document.getElementById("canvas1"),
+    start : function() {
+       // this.canvas.width = 640;
+       // this.canvas.height = 480;
+       curves = [0,0, 1, -1, 1, -1,-1,1,1,0,0,0];
+        this.context = document.getElementById("canvas1").getContext("2d");
+        document.body.insertBefore(document.getElementById("canvas1"), document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, 20);
+        window.addEventListener('keydown', function (e) {
+            e.preventDefault();
+            myGameArea.keys = (myGameArea.keys || []);
+            myGameArea.keys[e.keyCode] = (e.type == "keydown");
+        })
+        window.addEventListener('keyup', function (e) {
+          //if (e.type == "keyup"){  
+         //   speed = 0;
+         //   document.getElementById("divSpeed").innerText= "0";
+         // }
+            myGameArea.keys[e.keyCode] = (e.type == "keydown"); //keydown
+        })
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    },    
+    clear : function() {
+        this.context.clearRect(0, 0, document.getElementById("canvas1").width, document.getElementById("canvas1").height);
+    }
+}
+
+function updateGameArea() 
+{
+    myGameArea.clear();
+  //  myGamePiece.moveAngle = 0;
+    carspeedx = 0;
+   
+    if (myGameArea.keys && myGameArea.keys[39]) {if (speed>0) carspeedx= 5; }
+    if (myGameArea.keys && myGameArea.keys[37]) { if (speed>0) carspeedx= -5; }
+    if (myGameArea.keys && myGameArea.keys[38]) {if (speed<5) speed+=0.1;document.getElementById("divSpeed").innerText=speed.toFixed(2);}
+    if (myGameArea.keys && myGameArea.keys[40]) { if (speed>0) speed-=0.1;document.getElementById("divSpeed").innerText=speed.toFixed(2);}
+    
+
+    //myGamePiece.newPos();
+    carx +=carspeedx;
+   // myGamePiece.update();
+   drawGround();
+  
+
+   //if (endx>400 || endx<0)
+   //   direction = -direction;
+
+   if (currentCurve<curves.length)
+   {
+    curveStep++;
+   }
+   else
+   {
+    endRace();
+    return;
+   }
+
+   if (curveStep>100)
+   {
+    currentCurve++;
+    direction = curves[currentCurve];
+    curveStep = 0;
+  }
+
+      curve =direction*speed;
+
+   road();
+   drawImage("imgCar", carx, cary);
+
+   enemyCar();
+
+   collision();
+
+   if (incrash == 0 ){
+    if (carx<startx || carx > startx + roadWidth)
+    {
+      crash();
+    }
+  }
+  else
+  {
+    if (!(carx<startx || carx > startx + roadWidth))
+    {
+      incrash = 0;
+    }
+  }
+   
+
+  }
+
+
+  function endRace()
+  {
+    myGameArea.stop();
+    if (position == 1)
+      drawImage("imgVictory", 0,0);
+    else
+      drawImage("imgGameOver", 0,0);
+  }
+
+  function crash()
+  {
+    incrash = 1;
+    speed = 0;
+    document.getElementById("divSpeed").innerText=speed.toFixed(2);
+    playSound("explosion.wav");
+  }
+
+    function drawGround()
+    {
+      ctx = document.getElementById("canvas1").getContext("2d");
+      
+      ctx.beginPath();
+      ctx.fillStyle = "brown";
+      ctx.fillRect(0, horizont, canvasWidth, canvasHeight);
+      ctx.stroke();
+    }
+
+function collision()
+{
+  if (cary-(enemyCary+carWidth)<20)
+  {
+    if (carx<=enemyCarx && carx + carWidth > enemyCarx)
+    {
+      crash();
+    }
+    
+    if (carx>=enemyCarx && enemyCarx+carWidth > carx )
+    {
+      crash();
+    }
+
+   
+
+}
+}
+
+//function mapRace()
+//{
+ // const curves = [1,-1, 1, -1];
+//}
+
+function enemyCar()
+{
+
+  if (speed < 1)
+  {
+    enemySpeedy = 0.5;
+  }
+  
+  enemySpeedy = speed-3;
+
+  if (enemyCary >= ground && enemyCary+enemySpeedy < ground)
+  {
+    position ++;
+    document.getElementById("divPosition").innerText = position;
+  }
+  
+  enemyCary += enemySpeedy;
+  enemyCarx += curve*2;
+  
+
+  if (!(position==1))
+  if (enemyCary>ground)
+  {
+   
+    position--;
+    document.getElementById("divPosition").innerText = position;
+
+    if (!(position==1))
+      enemyCary = horizont;
+    
+  }
+
+  if (enemyCary >= horizont)
+  {
+    drawImage("imgEnemyCar", enemyCarx, enemyCary);
+  }
+
+}
+
+   function road()
+   {
+
+var controlxx= 0;
+var controlyy = 0;
+var flag = 0;
+
+    c = document.getElementById("canvas");
+    ctx = document.getElementById("canvas1").getContext("2d");
+   // ctx.clearRect(0,0, canvasWidth, canvasHeight);
+
+   
+
+//the horizont
+ctx.beginPath();
+ctx.moveTo(0, horizont);
+ctx.lineTo(canvasWidth, horizont);
+ctx.stroke();
+
+
+//the road
+  
+  
+   endx += curve*2;
+   startx += curve;
+
+if  (startx<0)
+{
+  startx  =0;
+  enemyCarx = 0;
+}
+if (endx<0)
+{
+  endx = 0;
+  enemycarx = 0;
+}
+
+if  (startx+roadWidth>canvasWidth)
+{
+  startx  =canvasWidth-roadWidth;
+  enemyCarx = startx;
+}
+if (endx+roadWidth>canvasWidth)
+{
+  endx = canvasWidth-roadWidth;
+  enemyCarx = endx;
+}
+
+  // controlx = (startx+endx)/2;
+  // controly = (starty+endy)/2;
+
+//   ctx.beginPath();
+//   ctx.moveTo(startx, starty);
+//   ctx.quadraticCurveTo(controlx, controly, endx, endy);
+//   ctx.strokeStyle = "black";
+ //  ctx.stroke();
+
+
+
+
+for (i = 0;i<=roadWidth;i++)
+{
+   controlx = i+(startx+endx-curve*10)/2;
+   controly = starty-curve*10;
+
+  if (flag == 0)
+if (i >= roadWidth/2)
+{
+  controlxx= controlx;
+  controlyy = controly;
+  flag = 1;
+}
+
+   ctx.beginPath();
+   ctx.moveTo(i+startx, starty);
+   ctx.quadraticCurveTo(controlx, controly, i+endx, endy);
+  //ctx.lineTo(endx+i, endy); 
+  ctx.strokeStyle = "black";
+   ctx.stroke();
+
+   
+}
+ roady+=speed;
+ if (roady+(canvasHeight-horizont)*2/3 > canvasHeight)
+  roady = horizont;
+  ctx.fillStyle = "white";
+  ctx.fillRect(controlxx, roady,  15, 15);
+  ctx.fillRect(controlxx, roady+(canvasHeight-horizont)/3,  15, 15);
+  ctx.fillRect(controlxx, roady+(canvasHeight-horizont)*2/3,  15, 15);
+
+
+   } //end road() 
+   
+    
+  function drawImage(idImage, xdraw, ydraw)
+{
+  const c = document.getElementById("canvas1");
+  const ctx = c.getContext("2d");
+  const img = document.getElementById(idImage);
+  ctx.drawImage(img, xdraw, ydraw);
+}
+
+function drawRotatedBombK(xdraw, ydraw, angle)
+{
+	const c = document.getElementById("canvas1");
+  	const ctx = c.getContext("2d");
+  	if (angle == 0 ) 
+		img = document.getElementById("imgBombK0");
+	if (angle == 90)
+	 img = document.getElementById("imgBombK90");
+	if (angle == 180)
+		img = document.getElementById("imgBombK180");
+	if  (angle == 270)
+		img = document.getElementById("imgBombK270");
+	
+  	ctx.drawImage(img, xdraw, ydraw);
+}
+
+function drawRotatedBombE(xdraw, ydraw, angle)
+{
+	const c = document.getElementById("canvas1");
+  	const ctx = c.getContext("2d");
+  	if (angle == 0 ) 
+		img = document.getElementById("imgBombE0");
+	if (angle == 90)
+	 img = document.getElementById("imgBombE90");
+	if (angle == 180)
+		img = document.getElementById("imgBombE180");
+	if  (angle == 270)
+		img = document.getElementById("imgBombE270");
+	
+  	ctx.drawImage(img, xdraw, ydraw);
+}
+
+function drawImageAngle(idImage, xdraw, ydraw, angle)
+{
+	const c = document.getElementById("canvas1");
+    const ctx = c.getContext("2d");
+	const img = document.getElementById(idImage);
+    ctx.save();
+	ctx.translate(xdraw, ydraw);
+	ctx.rotate(angle);
+	ctx.translate(-(xdraw+bombheight/2),-(ydraw+bombheight/2));
+	ctx.drawImage(img,xdraw, ydraw);
+	ctx.restore();
+}
+
+var TO_RADIANS = Math.PI/180; 
+function drawRotatedImage_old(idImage, x, y, angle)
+{ 
+	const c = document.getElementById("canvas1");
+    const context = c.getContext("2d");
+	const img = document.getElementById(idImage);
+    // save the current co-ordinate system 
+    // before we screw with it
+    context.save(); 
+
+    // move to the middle of where we want to draw our image
+    context.translate(x, y);
+
+    // rotate around that point, converting our 
+    // angle from degrees to radians 
+    context.rotate(angle * TO_RADIANS);
+
+    // draw it up and to the left by half the width
+    // and height of the image 
+    context.drawImage(image, -(image.width/2), -(image.height/2));
+
+    // and restore the co-ords to how they were when we began
+    context.restore(); 
+}
+
+
+   
+  
+    
+  
+  
+
+	function sleep(miliseconds) 
+	{
+   		var currentTime = new Date().getTime();
+
+   	while (currentTime + miliseconds >= new Date().getTime())
+	 {
+   	}
+	}
+
+	
+
+  
+
+
+    function startGame() {
+  //  myGamePiece = new component(30, 30, "red", 225, 225);
+  
+
+    myGameArea.start();
+}
+
+  
+    
+   
+
+   
+      
+
+       
+
+        
+   
+   
+     
+function start()
+{
+ document.getElementById('btnStart').setAttribute('hidden', 'true');
+  document.getElementById('canvas1').removeAttribute('hidden');
+  
+  startGame();
+  x = document.getElementById('mySound');
+  x.play();
+}
+
+</script>
+</head >
+<body >
+  
+  <table>
+<tr><td >
+  <div  >
+  Speed: 
+</div></td><td><div id="divSpeed">0</div></td>
+</tr>
+<tr><td><div>Position:</div></td><td><div id="divPosition">5</div></td></tr>
+</table>
+  <input id = "btnStart" type="button" value="Start Game" onclick="start();" />
+<canvas id = "canvas1" width=640 height = 450 style="background-color:#00A2E8;top:0;left:0;" hidden /> 
+
+
+
+<EMBED SRC = "test2.mid" HIDDEN = "true" loop = "yes" volume="10" autostart="true">
+
+<img id="imgGround" src="images/ground.bmp" alt="no" width="640" height="75" top="375" left="0" >
+<img id="imgVictory" src="images/victory.bmp" alt="no" width="640" height="75" top="375" left="0" >
+<img id="imgGameOver" src="images/gameover.bmp" alt="no" width="640" height="75" top="375" left="0" > 
+
+
+<img id="imgCar" src="images/car.png" alt="no" width="50" height="50" top="375" left="0" >
+<img id="imgEnemyCar" src="images/enemyCar.png" alt="no" width="50" height="50" top="375" left="0" >
+
+
+
+<audio controls id="mySound" loop>
+  <source src="sounds/tunnel.mp3" type="audio/mp3" /> 
+  <!-- <source src="sounds/arpegio3.mp3" type="audio/mp3" /> -->
+  </audio>
+
+<!--
+<audio controls id="mySound">
+  <source src="sound.mp3" type="audio/mp3">
+  </audio>
+  -->
+
+
+</body>
+</html>
