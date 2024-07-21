@@ -14,7 +14,7 @@ var currentCurve = 0;
 var curveStep = 0;
 
 var speed = 0;
-var enemySpeedy = 0;
+
 
 const roadWidth = 300;
 const horizont = 200;
@@ -22,7 +22,6 @@ const canvasWidth = 640;
 const canvasHeight = 480;
 const carSize = 50;
 const ground = canvasHeight;
-const carWidth = 50;
 
 var roady = horizont;
 
@@ -40,8 +39,13 @@ var controly = (starty+endy)/2;
 var carx = startx+50;
 var cary = canvasHeight-carSize-25; //??
 
-var enemyCarx = startx;
-var enemyCary = horizont+50;
+//var enemySpeedy = 0;
+//var enemyCarx = startx;
+//var enemyCary = horizont+50;
+
+var enemySpeedy = new Array(0,0,0,0,0);
+var enemyCarx = new Array(startx+carSize, startx+2*carSize, startx+3*carSize, startx+4*carSize, startx+5*carSize);
+var enemyCary = new Array(horizont+50, horizont+50,  horizont+50, horizont+50,horizont+50);
 
 var curve = 0;
 
@@ -104,7 +108,7 @@ function updateGameArea()
    
     if (myGameArea.keys && myGameArea.keys[39]) {if (speed>0) carspeedx= 5; }
     if (myGameArea.keys && myGameArea.keys[37]) { if (speed>0) carspeedx= -5; }
-    if (myGameArea.keys && myGameArea.keys[38]) {if (speed<5) speed+=0.1;document.getElementById("divSpeed").innerText=speed.toFixed(2);}
+    if (myGameArea.keys && myGameArea.keys[38]) {if (speed<5) {speed+=0.1;playSound("accelerate.wav");document.getElementById("divSpeed").innerText=speed.toFixed(2);}}
     if (myGameArea.keys && myGameArea.keys[40]) { if (speed>0) speed-=0.1;document.getElementById("divSpeed").innerText=speed.toFixed(2);}
     
 
@@ -190,14 +194,15 @@ function updateGameArea()
 
 function collision()
 {
-  if (cary-(enemyCary+carWidth)<20)
+  for (i=0;i<=4;i++)
+  if (cary-(enemyCary[i]+carSize)<20)
   {
-    if (carx<=enemyCarx && carx + carWidth > enemyCarx)
+    if (carx<=enemyCarx[i] && carx + carSize > enemyCarx[i])
     {
       crash();
     }
     
-    if (carx>=enemyCarx && enemyCarx+carWidth > carx )
+    if (carx>=enemyCarx[i] && enemyCarx[i]+carSize > carx )
     {
       crash();
     }
@@ -214,41 +219,39 @@ function collision()
 
 function enemyCar()
 {
-
+for (i=0;i<=4;i++){
   if (speed < 1)
   {
-    enemySpeedy = 0.5;
+    enemySpeedy[i] = 0.5;
   }
   
-  enemySpeedy = speed-3;
+  enemySpeedy[i] = i*0.5 + speed-3;
 
-  if (enemyCary >= ground && enemyCary+enemySpeedy < ground)
+  if (enemyCary[i] >= ground && enemyCary[i]+enemySpeedy[i] < ground)
   {
-    position ++;
+    position++;
     document.getElementById("divPosition").innerText = position;
   }
   
-  enemyCary += enemySpeedy;
-  enemyCarx += curve*2;
-  
-
-  if (!(position==1))
-  if (enemyCary>ground)
+  if (enemyCary[i] <= ground && enemyCary[i]+enemySpeedy[i] > ground)
   {
-   
     position--;
     document.getElementById("divPosition").innerText = position;
-
-    if (!(position==1))
-      enemyCary = horizont;
+    
+   // enemyCary[i] = horizont;
     
   }
+ 
+  enemyCary[i] += enemySpeedy[i];
+  enemyCarx[i] += curve*2;
+ 
 
-  if (enemyCary >= horizont)
+  if (enemyCary[i] >= horizont)
   {
-    drawImage("imgEnemyCar", enemyCarx, enemyCary);
+    drawImage("imgEnemyCar"+i, enemyCarx[i], enemyCary[i]);
   }
 
+ } //end for
 }
 
    function road()
@@ -280,23 +283,27 @@ ctx.stroke();
 if  (startx<0)
 {
   startx  =0;
-  enemyCarx = 0;
+  for (i=0;i<=4;i++)
+    enemyCarx[i] = 0;
 }
 if (endx<0)
 {
   endx = 0;
-  enemycarx = 0;
+  for (i=0;i<=4;i++)
+    enemyCarx[i] = 0;
 }
 
 if  (startx+roadWidth>canvasWidth)
 {
   startx  =canvasWidth-roadWidth;
-  enemyCarx = startx;
+  for (i=0;i<=4;i++)
+    enemyCarx[i] = startx+i*carSize;
 }
 if (endx+roadWidth>canvasWidth)
 {
   endx = canvasWidth-roadWidth;
-  enemyCarx = endx;
+  for (i=0;i<=4;i++)
+    enemyCarx[i] = endx+i*carSize;
 }
 
   // controlx = (startx+endx)/2;
@@ -468,7 +475,10 @@ function start()
 {
  document.getElementById('btnStart').setAttribute('hidden', 'true');
   document.getElementById('canvas1').removeAttribute('hidden');
-  
+
+  document.getElementById('tbl').style.display = "block";
+
+
   startGame();
   x = document.getElementById('mySound');
   x.play();
@@ -478,13 +488,13 @@ function start()
 </head >
 <body >
   
-  <table>
+  <table id = "tbl" style="display:none;">
 <tr><td >
-  <div  >
+  <div >
   Speed: 
-</div></td><td><div id="divSpeed">0</div></td>
+</div></td><td><div id="divSpeed" >0</div></td>
 </tr>
-<tr><td><div>Position:</div></td><td><div id="divPosition">5</div></td></tr>
+<tr><td><div ">Position:</div></td><td><div id="divPosition" >5</div></td></tr>
 </table>
   <input id = "btnStart" type="button" value="Start Game" onclick="start();" />
 <canvas id = "canvas1" width=640 height = 450 style="background-color:#00A2E8;top:0;left:0;" hidden /> 
@@ -499,12 +509,15 @@ function start()
 
 
 <img id="imgCar" src="images/car.png" alt="no" width="50" height="50" top="375" left="0" >
-<img id="imgEnemyCar" src="images/enemyCar.png" alt="no" width="50" height="50" top="375" left="0" >
-
+<img id="imgEnemyCar0" src="images/enemyCar0.png" alt="no" width="50" height="50" top="375" left="0" >
+<img id="imgEnemyCar1" src="images/enemyCar1.png" alt="no" width="50" height="50" top="375" left="0" >
+<img id="imgEnemyCar2" src="images/enemyCar2.png" alt="no" width="50" height="50" top="375" left="0" >
+<img id="imgEnemyCar3" src="images/enemyCar3.png" alt="no" width="50" height="50" top="375" left="0" >
+<img id="imgEnemyCar4" src="images/enemyCar4.png" alt="no" width="50" height="50" top="375" left="0" >
 
 
 <audio controls id="mySound" loop>
-  <source src="sounds/tunnel.mp3" type="audio/mp3" /> 
+  <source src="sounds/race.mp3" type="audio/mp3" /> 
   <!-- <source src="sounds/arpegio3.mp3" type="audio/mp3" /> -->
   </audio>
 
